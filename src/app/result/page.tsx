@@ -127,16 +127,10 @@ export default function Result() {
   };
 
   useEffect(() => {
+    setLoading(true);
     try {
-      setLoading(true);
-
       const stressLevel = searchParams.get("stress_level");
       const probability = searchParams.get("probability");
-
-      console.log("Query Parameters:", {
-        stress_level: stressLevel,
-        probability,
-      });
 
       if (!stressLevel) {
         throw new Error("Stress level not provided in query parameters");
@@ -144,9 +138,8 @@ export default function Result() {
 
       const prediction = parseInt(stressLevel);
       if (isNaN(prediction) || !(prediction in predictionMap)) {
-        console.warn("Invalid prediction value:", stressLevel);
         setFetchError(`Invalid stress level: ${stressLevel}`);
-        setStressType("episodic"); // Fallback
+        setStressType("episodic");
         return;
       }
 
@@ -157,17 +150,15 @@ export default function Result() {
         try {
           const parsedProbability = JSON.parse(decodeURIComponent(probability));
           console.log("Parsed Probability:", parsedProbability);
-          // Optionally store or use probability if needed in UI
         } catch (err) {
           console.warn("Failed to parse probability:", err);
         }
       }
     } catch (error) {
-      console.error("Error processing query parameters:", error);
       setFetchError(
         `Error: ${error instanceof Error ? error.message : "Unknown error"}`
       );
-      setStressType("episodic"); // Fallback
+      setStressType("episodic");
     } finally {
       setLoading(false);
     }
@@ -178,16 +169,7 @@ export default function Result() {
   if (loading) {
     return (
       <ThemeProvider theme={theme}>
-        <Container
-          maxWidth="md"
-          sx={{
-            py: 12,
-            textAlign: "center",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
+        <Container maxWidth="md" sx={{ py: 12, textAlign: "center" }}>
           <CircularProgress color="primary" size={40} />
           <Typography variant="body1" sx={{ mt: 3 }}>
             Loading your stress analysis...
@@ -201,11 +183,7 @@ export default function Result() {
     <ThemeProvider theme={theme}>
       <Container maxWidth="lg" sx={{ py: 5 }}>
         <Paper elevation={0} sx={{ p: { xs: 3, md: 5 }, mb: 4 }}>
-          <Typography
-            variant="h4"
-            align="center"
-            sx={{ mb: 4, color: theme.palette.primary.dark }}
-          >
+          <Typography variant="h4" align="center" sx={{ mb: 4 }}>
             Your Stress Analysis Results
           </Typography>
 
@@ -225,14 +203,7 @@ export default function Result() {
             </Box>
           )}
 
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              gap: 4,
-              mb: 6,
-            }}
-          >
+          <Box sx={{ display: "flex", flexDirection: { xs: "column", md: "row" }, gap: 4, mb: 6 }}>
             <Paper
               elevation={0}
               sx={{
@@ -240,9 +211,7 @@ export default function Result() {
                 p: 3,
                 border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
                 background: alpha(theme.palette.primary.light, 0.05),
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
+                textAlign: "center",
               }}
             >
               <Typography variant="h6" sx={{ mb: 2 }}>
@@ -259,11 +228,7 @@ export default function Result() {
                   px: 2,
                 }}
               />
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mt: 2, textAlign: "center", maxWidth: 300 }}
-              >
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
                 {stressInfo.description}
               </Typography>
             </Paper>
@@ -286,20 +251,8 @@ export default function Result() {
               <Divider sx={{ mb: 2 }} />
               <Stack spacing={1.5}>
                 {stressInfo.recommendations.map((rec, index) => (
-                  <Box
-                    key={index}
-                    sx={{ display: "flex", alignItems: "flex-start" }}
-                  >
-                    <Box
-                      sx={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: "50%",
-                        bgcolor: theme.palette.primary.main,
-                        mt: 1,
-                        mr: 1.5,
-                      }}
-                    />
+                  <Box key={index} sx={{ display: "flex", alignItems: "flex-start" }}>
+                    <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: theme.palette.primary.main, mt: 1, mr: 1.5 }} />
                     <Typography variant="body1">{rec}</Typography>
                   </Box>
                 ))}
@@ -307,37 +260,15 @@ export default function Result() {
             </Paper>
           </Box>
 
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              mb: 4,
-              border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-              background: alpha(theme.palette.primary.light, 0.05),
-            }}
-          >
-            <Typography
-              variant="h6"
-              sx={{ mb: 2, color: theme.palette.primary.dark }}
-            >
+          <Paper elevation={0} sx={{ p: 3, mb: 4, border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`, background: alpha(theme.palette.primary.light, 0.05) }}>
+            <Typography variant="h6" sx={{ mb: 2 }}>
               Understanding Stress Types
             </Typography>
             <Divider sx={{ mb: 2 }} />
             <Stack spacing={2}>
               {Object.values(stressTypes).map((type) => (
-                <Box
-                  key={type.label}
-                  sx={{ display: "flex", alignItems: "flex-start" }}
-                >
-                  <Chip
-                    label={type.label}
-                    sx={{
-                      bgcolor: type.color,
-                      color: "white",
-                      mr: 2,
-                      minWidth: 140,
-                    }}
-                  />
+                <Box key={type.label} sx={{ display: "flex", alignItems: "flex-start" }}>
+                  <Chip label={type.label} sx={{ bgcolor: type.color, color: "white", mr: 2, minWidth: 140 }} />
                   <Typography variant="body1">{type.description}</Typography>
                 </Box>
               ))}
@@ -345,35 +276,13 @@ export default function Result() {
           </Paper>
 
           <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
-            <Link href="/predict" passHref style={{ textDecoration: "none" }}>
-              <Button
-                variant="contained"
-                size="large"
-                sx={{
-                  px: 4,
-                  bgcolor: theme.palette.primary.main,
-                  "&:hover": {
-                    bgcolor: theme.palette.primary.dark,
-                  },
-                }}
-              >
+            <Link href="/predict" passHref legacyBehavior>
+              <Button variant="contained" size="large" sx={{ px: 4 }}>
                 Analyze Again
               </Button>
             </Link>
-            <Link href="/" passHref style={{ textDecoration: "none" }}>
-              <Button
-                variant="outlined"
-                size="large"
-                sx={{
-                  px: 4,
-                  borderColor: theme.palette.primary.main,
-                  color: theme.palette.primary.main,
-                  "&:hover": {
-                    borderColor: theme.palette.primary.dark,
-                    bgcolor: alpha(theme.palette.primary.main, 0.05),
-                  },
-                }}
-              >
+            <Link href="/" passHref legacyBehavior>
+              <Button variant="outlined" size="large" sx={{ px: 4 }}>
                 Home
               </Button>
             </Link>
