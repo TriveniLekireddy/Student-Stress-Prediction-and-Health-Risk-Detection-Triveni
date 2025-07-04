@@ -84,7 +84,7 @@ export default function Result() {
 
       const predictedType = predictionMap[prediction];
       setStressType(predictedType);
-    } catch (err) {
+    } catch {
       setStressType("episodic");
     } finally {
       setLoading(false);
