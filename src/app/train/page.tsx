@@ -70,8 +70,6 @@ interface DatasetRow {
 export default function TestPage() {
   const [tabValue, setTabValue] = useState(0);
   const [dataset, setDataset] = useState<DatasetRow[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage] = useState(10);
 
@@ -91,35 +89,35 @@ export default function TestPage() {
     { name: "Decision Trees", accuracy: 0.86, f1Score: 0.86, recall: 0.85, precision: 0.88 },
   ];
 
-  const mockDataset: DatasetRow[] = Array.from({ length: 50 }, () => ({
-    anxiety_level: Math.floor(Math.random() * 10),
-    self_esteem: Math.floor(Math.random() * 30),
-    mental_health_history: Math.round(Math.random()),
-    depression: Math.floor(Math.random() * 10),
-    headache: Math.floor(Math.random() * 5),
-    blood_pressure: Math.floor(Math.random() * 3),
-    sleep_quality: Math.floor(Math.random() * 5),
-    breathing_problem: Math.floor(Math.random() * 5),
-    noise_level: Math.floor(Math.random() * 5),
-    living_conditions: Math.floor(Math.random() * 5),
-    safety: Math.floor(Math.random() * 5),
-    basic_needs: Math.floor(Math.random() * 5),
-    academic_performance: Math.floor(Math.random() * 5),
-    study_load: Math.floor(Math.random() * 5),
-    teacher_student_relationship: Math.floor(Math.random() * 5),
-    future_career_concerns: Math.floor(Math.random() * 5),
-    social_support: Math.floor(Math.random() * 5),
-    peer_pressure: Math.floor(Math.random() * 5),
-    extracurricular_activities: Math.floor(Math.random() * 5),
-    bullying: Math.floor(Math.random() * 5),
-    stress_level: Math.floor(Math.random() * 3),
-  }));
-
+  // Mock data used only when tabValue === 1
   useEffect(() => {
     if (tabValue === 1 && dataset.length === 0) {
+      const mockDataset: DatasetRow[] = Array.from({ length: 50 }, () => ({
+        anxiety_level: Math.floor(Math.random() * 10),
+        self_esteem: Math.floor(Math.random() * 30),
+        mental_health_history: Math.round(Math.random()),
+        depression: Math.floor(Math.random() * 10),
+        headache: Math.floor(Math.random() * 5),
+        blood_pressure: Math.floor(Math.random() * 3),
+        sleep_quality: Math.floor(Math.random() * 5),
+        breathing_problem: Math.floor(Math.random() * 5),
+        noise_level: Math.floor(Math.random() * 5),
+        living_conditions: Math.floor(Math.random() * 5),
+        safety: Math.floor(Math.random() * 5),
+        basic_needs: Math.floor(Math.random() * 5),
+        academic_performance: Math.floor(Math.random() * 5),
+        study_load: Math.floor(Math.random() * 5),
+        teacher_student_relationship: Math.floor(Math.random() * 5),
+        future_career_concerns: Math.floor(Math.random() * 5),
+        social_support: Math.floor(Math.random() * 5),
+        peer_pressure: Math.floor(Math.random() * 5),
+        extracurricular_activities: Math.floor(Math.random() * 5),
+        bullying: Math.floor(Math.random() * 5),
+        stress_level: Math.floor(Math.random() * 3),
+      }));
       setDataset(mockDataset);
     }
-  }, [tabValue, dataset.length, mockDataset]);
+  }, [tabValue, dataset.length]);
 
   const columns = [
     "Anxiety Level", "Self Esteem", "Mental Health History", "Depression",
@@ -189,12 +187,10 @@ export default function TestPage() {
         </TabPanel>
 
         <TabPanel value={tabValue} index={1}>
-          {loading ? (
+          {dataset.length === 0 ? (
             <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
               <CircularProgress sx={{ color: "#592E83" }} />
             </Box>
-          ) : error ? (
-            <Typography sx={{ color: "#592E83", textAlign: "center", py: 4 }}>{error}</Typography>
           ) : (
             <>
               <TableContainer component={Paper} sx={{ backgroundColor: "#F8F9FA", borderRadius: "8px" }}>
@@ -237,5 +233,6 @@ export default function TestPage() {
     </Box>
   );
 }
+
 
 
