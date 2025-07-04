@@ -16,7 +16,27 @@ import {
 import axios from "axios";
 import { useRouter } from "next/navigation";
 
-const featureGroups = {
+interface Feature {
+  label: string;
+  name: keyof FormData;
+  type: "slider" | "radio";
+  min?: number;
+  max?: number;
+  minLabel?: string;
+  maxLabel?: string;
+  options?: { value: number; label: string }[];
+}
+
+interface FormData {
+  anxiety_level: number;
+  self_esteem: number;
+  mental_health_history: number;
+  depression: number;
+  headache: number;
+  blood_pressure: number;
+}
+
+const featureGroups: { [key: string]: Feature[] } = {
   health: [
     {
       label: "Blood Pressure",
@@ -42,7 +62,7 @@ const featureGroups = {
 };
 
 export default function Predict() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     anxiety_level: 5,
     self_esteem: 15,
     mental_health_history: 0,
@@ -55,11 +75,11 @@ export default function Predict() {
   const [error, setError] = useState("");
   const router = useRouter();
 
-  const handleSliderChange = (name: string) => (_event: Event, newValue: number | number[]) => {
+  const handleSliderChange = (name: keyof FormData) => (_event: Event, newValue: number | number[]) => {
     setFormData({ ...formData, [name]: newValue as number });
   };
 
-  const handleRadioChange = (name: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleRadioChange = (name: keyof FormData) => (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [name]: parseInt(event.target.value) });
   };
 
@@ -105,7 +125,7 @@ export default function Predict() {
                   value={formData[feature.name].toString()}
                   onChange={handleRadioChange(feature.name)}
                 >
-                  {feature.options.map((option) => (
+                  {feature.options?.map((option) => (
                     <FormControlLabel
                       key={option.value}
                       value={option.value.toString()}
@@ -128,6 +148,7 @@ export default function Predict() {
     </Container>
   );
 }
+
 
 
 
