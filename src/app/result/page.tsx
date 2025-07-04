@@ -1,387 +1,215 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
-  Typography,
-  Button,
-  Container,
   Box,
-  Paper,
-  ThemeProvider,
-  createTheme,
-  Stack,
-  Divider,
-  Chip,
-  alpha,
+  Button,
+  Typography,
+  Slider,
   CircularProgress,
+  Paper,
+  Container,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
+  FormControl,
 } from "@mui/material";
-import Link from "next/link";
-import { FaRegLightbulb } from "react-icons/fa";
+import axios from "axios";
+import { useRouter } from "next/navigation";
 
-interface StressTypeInfo {
-  label: string;
-  description: string;
-  recommendations: string[];
-  color: string;
+// Tooltip descriptions for each feature
+const featureDescriptions = {
+  anxiety_level: "Degree of worry and nervousness you experience",
+  self_esteem: "Your perception of self-worth and confidence",
+  mental_health_history: "Whether you have a history of mental health issues",
+  depression: "Feelings of sadness or hopelessness",
+  headache: "Frequency and intensity of headaches experienced",
+  blood_pressure: "Your blood pressure level affecting overall health",
+  sleep_quality: "How well and restfully you sleep",
+  breathing_problem: "Frequency of breathing difficulties",
+  noise_level: "Level of distracting noise in your study environment",
+  living_conditions: "Quality of your living environment",
+  safety: "How safe and secure you feel in your environment",
+  basic_needs: "Access to fundamental necessities (food, shelter, etc.)",
+  academic_performance: "How well you're doing in your academic studies",
+  study_load: "Intensity of your academic workload",
+  teacher_student_relationship: "Quality of interactions with teachers",
+  future_career_concerns: "Worries about your future job prospects",
+  social_support: "Level of support received from friends/family",
+  peer_pressure: "Influence from peers to behave in certain ways",
+  extracurricular_activities: "Involvement in activities outside regular curriculum",
+  bullying: "Experiences of being targeted or harassed",
+};
+
+// Grouped features for rendering
+const featureGroups = {
+  health: [
+    {
+      label: "Blood Pressure",
+      name: "blood_pressure",
+      type: "radio",
+      options: [
+        { value: 0, label: "Low" },
+        { value: 1, label: "Normal" },
+        { value: 2, label: "High" },
+        { value: 3, label: "Very High" },
+      ],
+    },
+    {
+      label: "Headache Frequency",
+      name: "headache",
+      type: "slider",
+      min: 0,
+      max: 5,
+      minLabel: "None",
+      maxLabel: "Constant",
+    },
+    {
+      label: "Sleep Quality",
+      name: "sleep_quality",
+      type: "slider",
+      min: 0,
+      max: 5,
+      minLabel: "Poor",
+      maxLabel: "Excellent",
+    },
+    {
+      label: "Breathing Problems",
+      name: "breathing_problem",
+      type: "slider",
+      min: 0,
+      max: 5,
+      minLabel: "None",
+      maxLabel: "Severe",
+    },
+  ],
+};
+
+interface FormData {
+  anxiety_level: number;
+  self_esteem: number;
+  mental_health_history: number;
+  depression: number;
+  headache: number;
+  blood_pressure: number;
+  sleep_quality: number;
+  breathing_problem: number;
 }
 
-export default function Result() {
-  const searchParams = useSearchParams();
-  const [loading, setLoading] = useState(true);
-  const [stressType, setStressType] = useState<string>("episodic");
-  const [fetchError, setFetchError] = useState<string | null>(null);
+interface FeatureInput {
+  label: string;
+  name: keyof FormData;
+  type: string;
+  min?: number;
+  max?: number;
+  minLabel?: string;
+  maxLabel?: string;
+  options?: { value: number; label: string }[];
+}
 
-  const theme = createTheme({
-    palette: {
-      primary: {
-        main: "#592E83",
-        light: "#9984D4",
-        dark: "#230C33",
-      },
-      secondary: {
-        main: "#CAA8F5",
-      },
-      background: {
-        default: "#f8f9fa",
-        paper: "#ffffff",
-      },
-      text: {
-        primary: "#230C33",
-        secondary: "#592E83",
-      },
-    },
-    typography: {
-      fontFamily: "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
-      h4: { fontWeight: 700 },
-      h6: { fontWeight: 600 },
-      subtitle1: { fontWeight: 500 },
-    },
-    components: {
-      MuiPaper: {
-        styleOverrides: {
-          root: {
-            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
-            borderRadius: 16,
-          },
-        },
-      },
-      MuiButton: {
-        styleOverrides: {
-          root: {
-            borderRadius: 8,
-            textTransform: "none",
-            fontWeight: 600,
-            padding: "10px 24px",
-          },
-        },
-      },
-      MuiChip: {
-        styleOverrides: {
-          root: {
-            fontWeight: 600,
-            borderRadius: 8,
-          },
-        },
-      },
-    },
+export default function Predict() {
+  const [formData, setFormData] = useState<FormData>({
+    anxiety_level: 5,
+    self_esteem: 15,
+    mental_health_history: 0,
+    depression: 5,
+    headache: 2,
+    blood_pressure: 1,
+    sleep_quality: 3,
+    breathing_problem: 2,
   });
 
-  const stressTypes: Record<string, StressTypeInfo> = {
-    acute: {
-      label: "Acute Stress",
-      description: "Short-term stress from specific events or situations.",
-      recommendations: [
-        "Practice deep breathing exercises to calm your mind.",
-        "Engage in light physical activity like a short walk.",
-        "Break tasks into smaller, manageable steps.",
-      ],
-      color: "#22c55e",
-    },
-    episodic: {
-      label: "Episodic Stress",
-      description: "Frequent stress from recurring challenges or pressures.",
-      recommendations: [
-        "Establish a consistent daily routine to reduce chaos.",
-        "Practice mindfulness or meditation for 10 minutes daily.",
-        "Seek support from friends or a counselor to manage triggers.",
-      ],
-      color: "#f97316",
-    },
-    chronic: {
-      label: "Chronic Stress",
-      description: "Persistent stress from ongoing life circumstances.",
-      recommendations: [
-        "Consult a mental health professional for personalized strategies.",
-        "Prioritize quality sleep with a regular bedtime routine.",
-        "Incorporate stress-relief activities like yoga or journaling.",
-      ],
-      color: "#ef4444",
-    },
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
+
+  const handleSliderChange = (name: keyof FormData) => (_event: Event, newValue: number | number[]) => {
+    setFormData({ ...formData, [name]: newValue as number });
   };
 
-  useEffect(() => {
-    const predictionMap: Record<number, string> = {
-      0: "acute",
-      1: "episodic",
-      2: "chronic",
-    };
+  const handleRadioChange = (name: keyof FormData) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [name]: parseInt(event.target.value) });
+  };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
     try {
-      setLoading(true);
-
-      const stressLevel = searchParams.get("stress_level");
-      const probability = searchParams.get("probability");
-
-      console.log("Query Parameters:", {
-        stress_level: stressLevel,
-        probability,
-      });
-
-      if (!stressLevel) {
-        throw new Error("Stress level not provided in query parameters");
-      }
-
-      const prediction = parseInt(stressLevel);
-      if (isNaN(prediction) || !(prediction in predictionMap)) {
-        console.warn("Invalid prediction value:", stressLevel);
-        setFetchError(`Invalid stress level: ${stressLevel}`);
-        setStressType("episodic");
-        return;
-      }
-
-      const predictedType = predictionMap[prediction];
-      setStressType(predictedType);
-
-      if (probability) {
-        try {
-          const parsedProbability = JSON.parse(decodeURIComponent(probability));
-          console.log("Parsed Probability:", parsedProbability);
-        } catch (err) {
-          console.warn("Failed to parse probability:", err);
-        }
-      }
-    } catch (error) {
-      console.error("Error processing query parameters:", error);
-      setFetchError(
-        `Error: ${error instanceof Error ? error.message : "Unknown error"}`
+      const response = await axios.post(
+        process.env.NEXT_PUBLIC_API_URL + "/predict",
+        formData
       );
-      setStressType("episodic");
+      const { prediction, probability } = response.data;
+      router.replace(`/result?stress_level=${prediction}&probability=${encodeURIComponent(JSON.stringify(probability))}`);
+    } catch {
+      setError("Error predicting stress level. Please try again.");
     } finally {
       setLoading(false);
     }
-  }, [searchParams]);
+  };
 
-  const stressInfo = stressTypes[stressType];
-
-  if (loading) {
+  const renderInput = ({
+    label,
+    name,
+    type,
+    min,
+    max,
+    minLabel,
+    maxLabel,
+    options,
+  }: FeatureInput) => {
     return (
-      <ThemeProvider theme={theme}>
-        <Container
-          maxWidth="md"
-          sx={{
-            py: 12,
-            textAlign: "center",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
-          <CircularProgress color="primary" size={40} />
-          <Typography variant="body1" sx={{ mt: 3 }}>
-            Loading your stress analysis...
-          </Typography>
-        </Container>
-      </ThemeProvider>
+      <Box key={name} sx={{ mb: 4 }}>
+        <Typography>{label}</Typography>
+        {type === "slider" && (
+          <Slider
+            value={formData[name]}
+            onChange={handleSliderChange(name)}
+            min={min}
+            max={max}
+            step={1}
+            valueLabelDisplay="auto"
+          />
+        )}
+        {type === "radio" && options && (
+          <FormControl component="fieldset">
+            <RadioGroup
+              row
+              name={name}
+              value={formData[name].toString()}
+              onChange={handleRadioChange(name)}
+            >
+              {options.map((option) => (
+                <FormControlLabel
+                  key={option.value}
+                  value={option.value.toString()}
+                  control={<Radio />}
+                  label={option.label}
+                />
+              ))}
+            </RadioGroup>
+          </FormControl>
+        )}
+      </Box>
     );
-  }
+  };
 
   return (
-    <ThemeProvider theme={theme}>
-      <Container maxWidth="lg" sx={{ py: 5 }}>
-        <Paper elevation={0} sx={{ p: { xs: 3, md: 5 }, mb: 4 }}>
-          <Typography
-            variant="h4"
-            align="center"
-            sx={{ mb: 4, color: theme.palette.primary.dark }}
-          >
-            Your Stress Analysis Results
-          </Typography>
+    <Container>
+      <form onSubmit={handleSubmit}>
+        {featureGroups.health.map((feature) => renderInput(feature))}
 
-          {fetchError && (
-            <Box
-              sx={{
-                p: 2,
-                mb: 4,
-                bgcolor: alpha("#f87171", 0.1),
-                borderRadius: 2,
-                borderLeft: `4px solid #f87171`,
-              }}
-            >
-              <Typography color="error.main" variant="body2">
-                Debug info: {fetchError}
-              </Typography>
-            </Box>
-          )}
+        {error && <Typography color="error">{error}</Typography>}
 
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              gap: 4,
-              mb: 6,
-            }}
-          >
-            <Paper
-              elevation={0}
-              sx={{
-                flex: 1,
-                p: 3,
-                border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-                background: alpha(theme.palette.primary.light, 0.05),
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-              }}
-            >
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                Your Stress Type
-              </Typography>
-              <Chip
-                label={stressInfo.label}
-                sx={{
-                  bgcolor: stressInfo.color,
-                  color: "white",
-                  fontWeight: "bold",
-                  fontSize: "1.1rem",
-                  py: 1.5,
-                  px: 2,
-                }}
-              />
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mt: 2, textAlign: "center", maxWidth: 300 }}
-              >
-                {stressInfo.description}
-              </Typography>
-            </Paper>
-
-            <Paper
-              elevation={0}
-              sx={{
-                flex: 1.2,
-                p: 3,
-                border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-                background: alpha(theme.palette.primary.light, 0.05),
-              }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                <FaRegLightbulb size={20} color={theme.palette.primary.main} />
-                <Typography variant="h6" sx={{ ml: 1 }}>
-                  Personalized Recommendations
-                </Typography>
-              </Box>
-              <Divider sx={{ mb: 2 }} />
-              <Stack spacing={1.5}>
-                {stressInfo.recommendations.map((rec, index) => (
-                  <Box
-                    key={index}
-                    sx={{ display: "flex", alignItems: "flex-start" }}
-                  >
-                    <Box
-                      sx={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: "50%",
-                        bgcolor: theme.palette.primary.main,
-                        mt: 1,
-                        mr: 1.5,
-                      }}
-                    />
-                    <Typography variant="body1">{rec}</Typography>
-                  </Box>
-                ))}
-              </Stack>
-            </Paper>
-          </Box>
-
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              mb: 4,
-              border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-              background: alpha(theme.palette.primary.light, 0.05),
-            }}
-          >
-            <Typography
-              variant="h6"
-              sx={{ mb: 2, color: theme.palette.primary.dark }}
-            >
-              Understanding Stress Types
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-            <Stack spacing={2}>
-              {Object.values(stressTypes).map((type) => (
-                <Box
-                  key={type.label}
-                  sx={{ display: "flex", alignItems: "flex-start" }}
-                >
-                  <Chip
-                    label={type.label}
-                    sx={{
-                      bgcolor: type.color,
-                      color: "white",
-                      mr: 2,
-                      minWidth: 140,
-                    }}
-                  />
-                  <Typography variant="body1">{type.description}</Typography>
-                </Box>
-              ))}
-            </Stack>
-          </Paper>
-
-          <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
-            <Link href="/predict" passHref style={{ textDecoration: "none" }}>
-              <Button
-                variant="contained"
-                size="large"
-                sx={{
-                  px: 4,
-                  bgcolor: theme.palette.primary.main,
-                  "&:hover": {
-                    bgcolor: theme.palette.primary.dark,
-                  },
-                }}
-              >
-                Analyze Again
-              </Button>
-            </Link>
-            <Link href="/" passHref style={{ textDecoration: "none" }}>
-              <Button
-                variant="outlined"
-                size="large"
-                sx={{
-                  px: 4,
-                  borderColor: theme.palette.primary.main,
-                  color: theme.palette.primary.main,
-                  "&:hover": {
-                    borderColor: theme.palette.primary.dark,
-                    bgcolor: alpha(theme.palette.primary.main, 0.05),
-                  },
-                }}
-              >
-                Home
-              </Button>
-            </Link>
-          </Box>
-        </Paper>
-      </Container>
-    </ThemeProvider>
+        <Button type="submit" variant="contained" disabled={loading}>
+          {loading ? <CircularProgress size={24} /> : "Analyze My Stress Level"}
+        </Button>
+      </form>
+    </Container>
   );
 }
+
 
 
 
