@@ -8,17 +8,11 @@ import {
   Slider,
   CircularProgress,
   Container,
-  Grid,
-  Divider,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Radio,
   RadioGroup,
   FormControlLabel,
   FormControl,
 } from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 
@@ -80,7 +74,7 @@ export default function Predict() {
       );
       const { prediction, probability } = response.data;
       router.replace(`/result?stress_level=${prediction}&probability=${encodeURIComponent(JSON.stringify(probability))}`);
-    } catch (err) {
+    } catch {
       setError("Error predicting stress level. Please try again.");
     } finally {
       setLoading(false);
