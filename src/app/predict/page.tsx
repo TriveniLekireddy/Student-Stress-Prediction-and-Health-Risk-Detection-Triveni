@@ -1,16 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import {
   Box,
   Button,
   Typography,
   Slider,
   CircularProgress,
-  Paper,
   Container,
   Grid,
-  Divider,
   Accordion,
   AccordionSummary,
   AccordionDetails,
@@ -21,8 +18,8 @@ import {
   RadioGroup,
   FormControlLabel,
   FormControl,
-  FormLabel,
 } from "@mui/material";
+
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import PsychologyIcon from "@mui/icons-material/Psychology";
