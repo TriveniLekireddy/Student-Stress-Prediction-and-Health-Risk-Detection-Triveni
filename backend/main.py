@@ -11,6 +11,11 @@ from fastapi import status
 
 app = FastAPI()
 
+# ✅ New root route
+@app.get("/")
+async def root():
+    return {"message": "🎓 Student Stress Prediction API is running successfully!"}
+
 # Handle validation errors nicely
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
@@ -29,7 +34,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load the trained model and scaler
+# Load model and scaler
 try:
     model = load("xgb_stress_model.joblib")
     scaler = load("scaler.joblib")
@@ -39,7 +44,7 @@ except Exception as e:
     model = None
     scaler = None
 
-# Input model (20 features)
+# Input schema
 class InputData(BaseModel):
     anxiety_level: int = Field(..., ge=0, le=20)
     self_esteem: int = Field(..., ge=0, le=30)
@@ -69,59 +74,14 @@ async def predict(data: InputData):
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={"detail": "Model or scaler not available. Please try again later."}
         )
-
-    feature_names = [
-        "anxiety_level",
-        "self_esteem",
-        "mental_health_history",
-        "depression",
-        "headache",
-        "blood_pressure",
-        "sleep_quality",
-        "breathing_problem",
-        "noise_level",
-        "living_conditions",
-        "safety",
-        "basic_needs",
-        "academic_performance",
-        "study_load",
-        "teacher_student_relationship",
-        "future_career_concerns",
-        "social_support",
-        "peer_pressure",
-        "extracurricular_activities",
-        "bullying"
-    ]
-
-    features = pd.DataFrame([[
-        data.anxiety_level,
-        data.self_esteem,
-        data.mental_health_history,
-        data.depression,
-        data.headache,
-        data.blood_pressure,
-        data.sleep_quality,
-        data.breathing_problem,
-        data.noise_level,
-        data.living_conditions,
-        data.safety,
-        data.basic_needs,
-        data.academic_performance,
-        data.study_load,
-        data.teacher_student_relationship,
-        data.future_career_concerns,
-        data.social_support,
-        data.peer_pressure,
-        data.extracurricular_activities,
-        data.bullying
-    ]], columns=feature_names)
+    
+    feature_names = list(data.dict().keys())
+    features = pd.DataFrame([[getattr(data, col) for col in feature_names]], columns=feature_names)
 
     try:
         features_scaled = scaler.transform(features)
         prediction = model.predict(features_scaled)[0]
         probability = model.predict_proba(features_scaled)[0].tolist()
-
-        print(f"Raw prediction: {prediction}, Probabilities: {probability}")
 
         return {
             "prediction": int(prediction),
@@ -139,7 +99,7 @@ async def predict(data: InputData):
 async def model_info():
     if model is None:
         return {"status": "Model not loaded"}
-
+    
     return {
         "type": type(model).__name__,
         "features": 20,
@@ -152,9 +112,7 @@ async def health_check():
         return {"status": "warning", "message": "Model or scaler not loaded"}
     return {"status": "ok", "model_loaded": True, "scaler_loaded": True}
 
-# ✅ Use Render-assigned port if available
 if __name__ == "__main__":
-    import os
     import uvicorn
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
