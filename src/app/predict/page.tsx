@@ -32,7 +32,18 @@ import GroupIcon from "@mui/icons-material/Group";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 
-// Feature descriptions
+// 👇 Interface to fix TS error
+interface FeatureInput {
+  label: string;
+  name: string;
+  type: "slider" | "radio";
+  min?: number;
+  max?: number;
+  minLabel?: string;
+  maxLabel?: string;
+  options?: { value: number; label: string }[];
+}
+
 const featureDescriptions = {
   anxiety_level: "Degree of worry and nervousness you experience",
   self_esteem: "Your perception of self-worth and confidence",
@@ -52,12 +63,10 @@ const featureDescriptions = {
   future_career_concerns: "Worries about your future job prospects",
   social_support: "Level of support received from friends/family",
   peer_pressure: "Influence from peers to behave in certain ways",
-  extracurricular_activities:
-    "Involvement in activities outside regular curriculum",
+  extracurricular_activities: "Involvement in activities outside curriculum",
   bullying: "Experiences of being targeted or harassed",
 };
 
-// Feature groups
 const featureGroups = {
   health: [
     {
@@ -294,8 +303,6 @@ export default function Predict() {
     setLoading(true);
     setError("");
 
-    console.log("Submitting formData:", formData);
-
     try {
       const response = await axios.post(
         process.env.NEXT_PUBLIC_API_URL + "/predict",
@@ -326,56 +333,30 @@ export default function Predict() {
     minLabel,
     maxLabel,
     options,
-  }) => {
+  }: FeatureInput) => {
     if (type === "radio") {
       return (
-        <Card
-          elevation={0}
-          sx={{
-            backgroundColor: "rgba(255, 255, 255, 0.7)",
-            border: "1px solid rgba(202, 168, 245, 0.3)",
-            borderRadius: "8px",
-          }}
-        >
+        <Card elevation={0}>
           <CardContent>
             <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-              <Typography sx={{ fontWeight: 500, color: "#592E83", flex: 1 }}>
-                {label}
-              </Typography>
+              <Typography sx={{ fontWeight: 500 }}>{label}</Typography>
               <Tooltip title={featureDescriptions[name]} placement="top">
-                <InfoOutlinedIcon
-                  fontSize="small"
-                  sx={{ color: "#9984D4", cursor: "pointer" }}
-                />
+                <InfoOutlinedIcon fontSize="small" sx={{ ml: 1 }} />
               </Tooltip>
             </Box>
             <FormControl component="fieldset">
-              <FormLabel
-                component="legend"
-                sx={{ color: "#592E83", fontSize: "0.75rem" }}
-              >
-                Select an option
-              </FormLabel>
               <RadioGroup
                 row
                 name={name}
                 value={formData[name].toString()}
                 onChange={handleRadioChange(name)}
               >
-                {options.map((option) => (
+                {options?.map((option) => (
                   <FormControlLabel
                     key={option.value}
                     value={option.value.toString()}
-                    control={
-                      <Radio
-                        sx={{
-                          color: "#9984D4",
-                          "&.Mui-checked": { color: "#592E83" },
-                        }}
-                      />
-                    }
+                    control={<Radio />}
                     label={option.label}
-                    sx={{ color: "#592E83" }}
                   />
                 ))}
               </RadioGroup>
@@ -386,85 +367,40 @@ export default function Predict() {
     }
 
     return (
-      <Card
-        elevation={0}
-        sx={{
-          backgroundColor: "rgba(255, 255, 255, 0.7)",
-          border: "1px solid rgba(202, 168, 245, 0.3)",
-          borderRadius: "8px",
-        }}
-      >
+      <Card elevation={0}>
         <CardContent>
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-            <Typography sx={{ fontWeight: 500, color: "#592E83", flex: 1 }}>
-              {label}
-            </Typography>
+            <Typography sx={{ fontWeight: 500 }}>{label}</Typography>
             <Tooltip title={featureDescriptions[name]} placement="top">
-              <InfoOutlinedIcon
-                fontSize="small"
-                sx={{ color: "#9984D4", cursor: "pointer" }}
-              />
+              <InfoOutlinedIcon fontSize="small" sx={{ ml: 1 }} />
             </Tooltip>
           </Box>
-          <Box sx={{ px: 1, mt: 2 }}>
-            <Slider
-              value={formData[name]}
-              onChange={handleSliderChange(name)}
-              min={min}
-              max={max}
-              step={1}
-              valueLabelDisplay="auto"
-              sx={{
-                color: "#9984D4",
-                "& .MuiSlider-thumb": { backgroundColor: "#592E83" },
-                "& .MuiSlider-rail": {
-                  backgroundColor: "rgba(153, 132, 212, 0.3)",
-                },
-              }}
-            />
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                mt: 1,
-                color: "#592E83",
-                fontSize: "0.75rem",
-              }}
-            >
-              <Typography variant="caption">{minLabel}</Typography>
-              <Typography variant="caption">{maxLabel}</Typography>
-            </Box>
+          <Slider
+            value={formData[name]}
+            onChange={handleSliderChange(name)}
+            min={min}
+            max={max}
+            valueLabelDisplay="auto"
+          />
+          <Box sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}>
+            <Typography variant="caption">{minLabel}</Typography>
+            <Typography variant="caption">{maxLabel}</Typography>
           </Box>
         </CardContent>
       </Card>
     );
   };
 
-  const renderSliderGroup = (group, title, icon) => (
-    <Accordion
-      defaultExpanded
-      sx={{
-        backgroundColor: "rgba(153, 132, 212, 0.05)",
-        border: "1px solid rgba(202, 168, 245, 0.2)",
-        borderRadius: "8px !important",
-        mb: 2,
-        "&:before": { display: "none" },
-        boxShadow: "0 4px 20px rgba(35, 12, 51, 0.1)",
-      }}
-    >
-      <AccordionSummary
-        expandIcon={<ExpandMoreIcon sx={{ color: "#592E83" }} />}
-        sx={{
-          backgroundColor: "rgba(153, 132, 212, 0.1)",
-          borderTopLeftRadius: "8px",
-          borderTopRightRadius: "8px",
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+  const renderSliderGroup = (
+    group: FeatureInput[],
+    title: string,
+    icon: React.ReactNode
+  ) => (
+    <Accordion defaultExpanded>
+      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           {icon}
-          <Typography variant="h6" sx={{ color: "#230C33", fontWeight: 600 }}>
-            {title}
-          </Typography>
+          <Typography>{title}</Typography>
         </Box>
       </AccordionSummary>
       <AccordionDetails>
@@ -480,127 +416,38 @@ export default function Predict() {
   );
 
   return (
-    <Box
-      sx={{
-        minHeight: "calc(100vh - 64px)",
-        py: 6,
-        background: "linear-gradient(135deg, #FFFFFF 0%, #F8F9FA 100%)",
-      }}
-    >
+    <Box sx={{ py: 6 }}>
       <Container>
-        <Box sx={{ textAlign: "center", mb: 6 }}>
-          <Typography
-            variant="h3"
-            component="h1"
-            sx={{ color: "#230C33", fontWeight: 700, mb: 2 }}
-          >
-            Student Stress Assessment
-          </Typography>
-          <Typography
-            variant="h6"
-            sx={{
-              color: "#592E83",
-              maxWidth: "800px",
-              mx: "auto",
-              mb: 3,
-              fontWeight: 400,
-            }}
-          >
-            Adjust the sliders or select options to match your current situation
-            and get personalized insights
-          </Typography>
-          <Divider
-            sx={{ width: "100px", mx: "auto", borderColor: "#9984D4", mb: 4 }}
-          />
-          <Typography
-            variant="body1"
-            sx={{
-              color: "#592E83",
-              maxWidth: "700px",
-              mx: "auto",
-              fontStyle: "italic",
-            }}
-          >
-            Our AI model analyzes various aspects of your student life to
-            predict stress levels and provide tailored recommendations for
-            well-being.
-          </Typography>
-        </Box>
-
-        <Paper
-          elevation={0}
-          sx={{
-            backgroundColor: "rgba(255, 255, 255, 0.5)",
-            borderRadius: "16px",
-            p: { xs: 2, md: 4 },
-            backdropFilter: "blur(10px)",
-            border: "1px solid rgba(202, 168, 245, 0.2)",
-          }}
-        >
-          <form onSubmit={handleSubmit}>
-            {renderSliderGroup(
-              featureGroups.health,
-              "Health Factors",
-              <FavoriteIcon sx={{ color: "#592E83" }} />
-            )}
-            {renderSliderGroup(
-              featureGroups.mental,
-              "Mental Wellbeing",
-              <PsychologyIcon sx={{ color: "#592E83" }} />
-            )}
-            {renderSliderGroup(
-              featureGroups.academic,
-              "Academic Factors",
-              <SchoolIcon sx={{ color: "#592E83" }} />
-            )}
-            {renderSliderGroup(
-              featureGroups.environmental,
-              "Environmental & Social Factors",
-              <GroupIcon sx={{ color: "#592E83" }} />
-            )}
-
-            {error && (
-              <Typography
-                color="error"
-                sx={{ textAlign: "center", mt: 2, mb: 2 }}
-              >
-                {error}
-              </Typography>
-            )}
-
-            <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-              <Button
-                type="submit"
-                variant="contained"
-                size="large"
-                disabled={loading}
-                sx={{
-                  background:
-                    "linear-gradient(90deg, #9984D4 0%, #CAA8F5 100%)",
-                  color: "#230C33",
-                  fontWeight: "bold",
-                  padding: "12px 36px",
-                  borderRadius: "8px",
-                  textTransform: "none",
-                  fontSize: "1.1rem",
-                  "&:hover": {
-                    background:
-                      "linear-gradient(90deg, #CAA8F5 0%, #9984D4 100%)",
-                    boxShadow: "0 4px 20px rgba(202, 168, 245, 0.5)",
-                  },
-                  "&:disabled": { background: "rgba(153, 132, 212, 0.3)" },
-                }}
-              >
-                {loading ? (
-                  <CircularProgress size={24} sx={{ color: "#230C33" }} />
-                ) : (
-                  "Analyze My Stress Level"
-                )}
-              </Button>
-            </Box>
-          </form>
-        </Paper>
+        <Typography variant="h4" sx={{ mb: 4, textAlign: "center" }}>
+          Student Stress Assessment
+        </Typography>
+        <form onSubmit={handleSubmit}>
+          {renderSliderGroup(featureGroups.health, "Health", <FavoriteIcon />)}
+          {renderSliderGroup(featureGroups.mental, "Mental", <PsychologyIcon />)}
+          {renderSliderGroup(featureGroups.academic, "Academic", <SchoolIcon />)}
+          {renderSliderGroup(
+            featureGroups.environmental,
+            "Environmental",
+            <GroupIcon />
+          )}
+          {error && (
+            <Typography color="error" sx={{ mt: 2 }}>
+              {error}
+            </Typography>
+          )}
+          <Box sx={{ mt: 4, textAlign: "center" }}>
+            <Button
+              type="submit"
+              variant="contained"
+              size="large"
+              disabled={loading}
+            >
+              {loading ? <CircularProgress size={24} /> : "Analyze My Stress Level"}
+            </Button>
+          </Box>
+        </form>
       </Container>
     </Box>
   );
 }
+
