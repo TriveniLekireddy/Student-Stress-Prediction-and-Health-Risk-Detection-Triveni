@@ -111,8 +111,11 @@ async def health_check():
     if model is None or scaler is None:
         return {"status": "warning", "message": "Model or scaler not loaded"}
     return {"status": "ok", "model_loaded": True, "scaler_loaded": True}
-
 if __name__ == "__main__":
+    import os
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+    port = int(os.environ.get("PORT", 8000))  # Use Render-assigned port or default to 8000
+    uvicorn.run(app, host="0.0.0.0", port=port)
+
 
