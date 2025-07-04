@@ -64,14 +64,12 @@ class InputData(BaseModel):
 
 @app.post("/predict")
 async def predict(data: InputData):
-    # Check if model and scaler are loaded
     if model is None or scaler is None:
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={"detail": "Model or scaler not available. Please try again later."}
         )
-    
-    # Define feature names in the order expected by the model
+
     feature_names = [
         "anxiety_level",
         "self_esteem",
@@ -94,8 +92,7 @@ async def predict(data: InputData):
         "extracurricular_activities",
         "bullying"
     ]
-    
-    # Convert input to pandas DataFrame
+
     features = pd.DataFrame([[
         data.anxiety_level,
         data.self_esteem,
@@ -120,54 +117,44 @@ async def predict(data: InputData):
     ]], columns=feature_names)
 
     try:
-        # Scale the features
         features_scaled = scaler.transform(features)
-        
-        # Dynamic prediction from the model
         prediction = model.predict(features_scaled)[0]
-        
-        # Get probability scores
         probability = model.predict_proba(features_scaled)[0].tolist()
-        
+
         print(f"Raw prediction: {prediction}, Probabilities: {probability}")
-        
-        # Create response with prediction and probabilities
-        response = {
-            "prediction": int(prediction),  # Convert to int for JSON serialization
+
+        return {
+            "prediction": int(prediction),
             "probability": probability
         }
-        
-        return response
-        
+
     except Exception as e:
         print(f"Prediction error: {str(e)}")
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={"detail": f"Error computing prediction: {str(e)}"}
         )
-    
+
 @app.get("/model-info")
 async def model_info():
-    """Endpoint to get information about the loaded model"""
     if model is None:
         return {"status": "Model not loaded"}
-    
-    # Extract model information that might be useful for the frontend
-    model_info = {
+
+    return {
         "type": type(model).__name__,
         "features": 20,
-        "classes": [0, 1, 2]  # XGBoost classes: 0 (acute), 1 (periodic), 2 (chronic)
+        "classes": [0, 1, 2]
     }
-    
-    return model_info
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint that also verifies if the model and scaler are loaded"""
     if model is None or scaler is None:
         return {"status": "warning", "message": "Model or scaler not loaded"}
     return {"status": "ok", "model_loaded": True, "scaler_loaded": True}
 
+# ✅ Use Render-assigned port if available
 if __name__ == "__main__":
+    import os
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
