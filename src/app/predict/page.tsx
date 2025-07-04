@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Box,
   Button,
@@ -54,19 +54,7 @@ const featureDescriptions: Record<string, string> = {
 };
 
 // Feature groups
-const featureGroups: Record<
-  string,
-  {
-    label: string;
-    name: keyof typeof featureDescriptions;
-    type: "slider" | "radio";
-    min?: number;
-    max?: number;
-    minLabel?: string;
-    maxLabel?: string;
-    options?: { value: number; label: string }[];
-  }[]
-> = {
+const featureGroups = {
   health: [
     {
       label: "Blood Pressure",
@@ -301,15 +289,12 @@ export default function Predict() {
     e.preventDefault();
     setLoading(true);
     setError("");
-
     try {
       const response = await axios.post(
         process.env.NEXT_PUBLIC_API_URL + "/predict",
         formData
       );
-
       const { prediction, probability } = response.data;
-
       router.replace(
         `/result?stress_level=${prediction}&probability=${encodeURIComponent(
           JSON.stringify(probability)
@@ -323,9 +308,118 @@ export default function Predict() {
     }
   };
 
-  // your renderInput and renderSliderGroup logic remains unchanged here...
+  const renderInput = ({
+    label,
+    name,
+    type,
+    min,
+    max,
+    minLabel,
+    maxLabel,
+    options,
+  }: any) => {
+    if (type === "radio") {
+      return (
+        <Card variant="outlined">
+          <CardContent>
+            <Typography fontWeight={500}>{label}</Typography>
+            <Tooltip title={featureDescriptions[name]}>
+              <InfoOutlinedIcon fontSize="small" sx={{ ml: 1 }} />
+            </Tooltip>
+            <FormControl component="fieldset" sx={{ mt: 2 }}>
+              <RadioGroup
+                row
+                name={name}
+                value={formData[name].toString()}
+                onChange={handleRadioChange(name)}
+              >
+                {options.map((option: any) => (
+                  <FormControlLabel
+                    key={option.value}
+                    value={option.value.toString()}
+                    control={<Radio />}
+                    label={option.label}
+                  />
+                ))}
+              </RadioGroup>
+            </FormControl>
+          </CardContent>
+        </Card>
+      );
+    }
 
-  // you can reuse your JSX from previous version from this point onward
+    return (
+      <Card variant="outlined">
+        <CardContent>
+          <Typography fontWeight={500}>{label}</Typography>
+          <Tooltip title={featureDescriptions[name]}>
+            <InfoOutlinedIcon fontSize="small" sx={{ ml: 1 }} />
+          </Tooltip>
+          <Slider
+            value={formData[name]}
+            onChange={handleSliderChange(name)}
+            min={min}
+            max={max}
+            step={1}
+            valueLabelDisplay="auto"
+          />
+          <Box display="flex" justifyContent="space-between">
+            <Typography variant="caption">{minLabel}</Typography>
+            <Typography variant="caption">{maxLabel}</Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const renderGroup = (group: any[], title: string, icon: JSX.Element) => (
+    <Accordion defaultExpanded>
+      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+        <Box display="flex" alignItems="center" gap={1}>
+          {icon}
+          <Typography variant="h6">{title}</Typography>
+        </Box>
+      </AccordionSummary>
+      <AccordionDetails>
+        <Grid container spacing={2}>
+          {group.map((feature) => (
+            <Grid item xs={12} md={6} key={feature.name}>
+              {renderInput(feature)}
+            </Grid>
+          ))}
+        </Grid>
+      </AccordionDetails>
+    </Accordion>
+  );
+
+  return (
+    <Container sx={{ py: 5 }}>
+      <form onSubmit={handleSubmit}>
+        {renderGroup(featureGroups.health, "Health Factors", <FavoriteIcon />)}
+        {renderGroup(featureGroups.mental, "Mental Wellbeing", <PsychologyIcon />)}
+        {renderGroup(featureGroups.academic, "Academic Factors", <SchoolIcon />)}
+        {renderGroup(featureGroups.environmental, "Environmental & Social", <GroupIcon />)}
+
+        {error && (
+          <Typography color="error" align="center" sx={{ mt: 2 }}>
+            {error}
+          </Typography>
+        )}
+
+        <Box display="flex" justifyContent="center" mt={4}>
+          <Button
+            type="submit"
+            variant="contained"
+            size="large"
+            disabled={loading}
+          >
+            {loading ? <CircularProgress size={24} /> : "Analyze My Stress Level"}
+          </Button>
+        </Box>
+      </form>
+    </Container>
+  );
 }
+
 
 
