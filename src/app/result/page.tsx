@@ -1,248 +1,154 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
-  Typography,
-  Button,
-  Container,
   Box,
-  Paper,
-  ThemeProvider,
-  createTheme,
-  Stack,
-  Divider,
-  Chip,
+  Button,
+  Typography,
+  Slider,
   CircularProgress,
+  Container,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
+  FormControl,
 } from "@mui/material";
-import Link from "next/link";
-import { FaRegLightbulb } from "react-icons/fa";
+import axios from "axios";
+import { useRouter } from "next/navigation";
 
-const predictionMap: Record<number, StressType> = {
-  0: "acute",
-  1: "episodic",
-  2: "chronic",
-};
-
-type StressType = "acute" | "episodic" | "chronic";
-
-interface StressTypeInfo {
+interface Feature {
   label: string;
-  description: string;
-  recommendations: string[];
-  color: string;
+  name: keyof FormData;
+  type: "slider" | "radio";
+  min?: number;
+  max?: number;
+  minLabel?: string;
+  maxLabel?: string;
+  options?: { value: number; label: string }[];
 }
 
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: "#592E83",
-      light: "#9984D4",
-      dark: "#230C33",
-    },
-    secondary: {
-      main: "#CAA8F5",
-    },
-    background: {
-      default: "#f8f9fa",
-      paper: "#ffffff",
-    },
-    text: {
-      primary: "#230C33",
-      secondary: "#592E83",
-    },
-  },
-  typography: {
-    fontFamily: "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
-    h4: { fontWeight: 700 },
-    h6: { fontWeight: 600 },
-    subtitle1: { fontWeight: 500 },
-  },
-  components: {
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
-          borderRadius: 16,
-        },
-      },
-    },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 8,
-          textTransform: "none",
-          fontWeight: 600,
-          padding: "10px 24px",
-        },
-      },
-    },
-    MuiChip: {
-      styleOverrides: {
-        root: {
-          fontWeight: 600,
-          borderRadius: 8,
-        },
-      },
-    },
-  },
-});
+interface FormData {
+  anxiety_level: number;
+  self_esteem: number;
+  mental_health_history: number;
+  depression: number;
+  headache: number;
+  blood_pressure: number;
+}
 
-const stressTypes: Record<StressType, StressTypeInfo> = {
-  acute: {
-    label: "Acute Stress",
-    description: "Short-term stress from specific events or situations.",
-    recommendations: [
-      "Practice deep breathing exercises to calm your mind.",
-      "Engage in light physical activity like a short walk.",
-      "Break tasks into smaller, manageable steps.",
-    ],
-    color: "#22c55e",
-  },
-  episodic: {
-    label: "Episodic Stress",
-    description: "Frequent stress from recurring challenges or pressures.",
-    recommendations: [
-      "Establish a consistent daily routine to reduce chaos.",
-      "Practice mindfulness or meditation for 10 minutes daily.",
-      "Seek support from friends or a counselor to manage triggers.",
-    ],
-    color: "#f97316",
-  },
-  chronic: {
-    label: "Chronic Stress",
-    description: "Persistent stress from ongoing life circumstances.",
-    recommendations: [
-      "Consult a mental health professional for personalized strategies.",
-      "Prioritize quality sleep with a regular bedtime routine.",
-      "Incorporate stress-relief activities like yoga or journaling.",
-    ],
-    color: "#ef4444",
-  },
+const featureGroups: { [key: string]: Feature[] } = {
+  health: [
+    {
+      label: "Blood Pressure",
+      name: "blood_pressure",
+      type: "radio",
+      options: [
+        { value: 0, label: "Low" },
+        { value: 1, label: "Normal" },
+        { value: 2, label: "High" },
+        { value: 3, label: "Very High" },
+      ],
+    },
+    {
+      label: "Headache Frequency",
+      name: "headache",
+      type: "slider",
+      min: 0,
+      max: 5,
+      minLabel: "None",
+      maxLabel: "Constant",
+    },
+  ],
 };
 
-export default function Result() {
-  const searchParams = useSearchParams();
-  const [loading, setLoading] = useState<boolean>(true);
-  const [stressType, setStressType] = useState<StressType>("episodic");
-  const [fetchError, setFetchError] = useState<string | null>(null);
+export default function Predict() {
+  const [formData, setFormData] = useState<FormData>({
+    anxiety_level: 5,
+    self_esteem: 15,
+    mental_health_history: 0,
+    depression: 5,
+    headache: 2,
+    blood_pressure: 1,
+  });
 
-  useEffect(() => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
+
+  const handleSliderChange = (name: keyof FormData) => (_event: Event, newValue: number | number[]) => {
+    setFormData({ ...formData, [name]: newValue as number });
+  };
+
+  const handleRadioChange = (name: keyof FormData) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [name]: parseInt(event.target.value) });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
+    setError("");
     try {
-      const stressLevel = searchParams.get("stress_level");
-      const probability = searchParams.get("probability");
-
-      if (!stressLevel) {
-        throw new Error("Stress level not provided in query parameters");
-      }
-
-      const prediction = parseInt(stressLevel, 10);
-      if (isNaN(prediction) || !(prediction in predictionMap)) {
-        setFetchError(`Invalid stress level: ${stressLevel}`);
-        setStressType("episodic");
-        return;
-      }
-
-      const predictedType = predictionMap[prediction as 0 | 1 | 2];
-      setStressType(predictedType);
-
-      if (probability) {
-        try {
-          const parsedProbability = JSON.parse(decodeURIComponent(probability));
-          console.log("Parsed Probability:", parsedProbability);
-        } catch (error) {
-          console.warn("Failed to parse probability:", error);
-        }
-      }
-    } catch (error) {
-      setFetchError(
-        `Error: ${
-          error instanceof Error ? error.message : "Unknown error occurred"
-        }`
+      const response = await axios.post(
+        process.env.NEXT_PUBLIC_API_URL + "/predict",
+        formData
       );
-      setStressType("episodic");
+      const { prediction, probability } = response.data;
+      router.replace(`/result?stress_level=${prediction}&probability=${encodeURIComponent(JSON.stringify(probability))}`);
+    } catch {
+      setError("Error predicting stress level. Please try again.");
     } finally {
       setLoading(false);
     }
-  }, [searchParams]);
-
-  const stressInfo = stressTypes[stressType];
-
-  if (loading) {
-    return (
-      <ThemeProvider theme={theme}>
-        <Container maxWidth="md" sx={{ py: 12, textAlign: "center" }}>
-          <CircularProgress color="primary" size={40} />
-          <Typography variant="body1" sx={{ mt: 3 }}>
-            Loading your stress analysis...
-          </Typography>
-        </Container>
-      </ThemeProvider>
-    );
-  }
+  };
 
   return (
-    <ThemeProvider theme={theme}>
-      <Container maxWidth="sm" sx={{ py: 10 }}>
-        <Paper sx={{ p: 4 }}>
-          <Typography variant="h4" gutterBottom sx={{ color: "#230C33" }}>
-            {stressInfo.label}
-          </Typography>
-
-          <Typography variant="subtitle1" gutterBottom sx={{ mb: 2 }}>
-            {stressInfo.description}
-          </Typography>
-
-          <Divider sx={{ my: 3 }} />
-
-          <Typography variant="h6" gutterBottom>
-            Recommendations
-          </Typography>
-
-          <Stack spacing={2}>
-            {stressInfo.recommendations.map((rec, index) => (
-              <Chip
-                key={index}
-                icon={<FaRegLightbulb />}
-                label={rec}
-                sx={{
-                  backgroundColor: stressInfo.color,
-                  color: "#fff",
-                  fontWeight: 500,
-                }}
+    <Container>
+      <form onSubmit={handleSubmit}>
+        {featureGroups.health.map((feature) => (
+          <Box key={feature.name} sx={{ mb: 4 }}>
+            <Typography>{feature.label}</Typography>
+            {feature.type === "slider" && (
+              <Slider
+                value={formData[feature.name]}
+                onChange={handleSliderChange(feature.name)}
+                min={feature.min}
+                max={feature.max}
+                step={1}
+                valueLabelDisplay="auto"
               />
-            ))}
-          </Stack>
-
-          {fetchError && (
-            <Typography color="error" sx={{ mt: 3 }}>
-              {fetchError}
-            </Typography>
-          )}
-
-          <Box sx={{ mt: 4, textAlign: "center" }}>
-            <Button
-              href="/predict"
-              component={Link}
-              variant="contained"
-              sx={{
-                backgroundColor: "#9984D4",
-                color: "#fff",
-                fontWeight: "bold",
-                px: 4,
-                py: 1.5,
-                textTransform: "none",
-              }}
-            >
-              Analyze Again
-            </Button>
+            )}
+            {feature.type === "radio" && (
+              <FormControl component="fieldset">
+                <RadioGroup
+                  row
+                  name={feature.name}
+                  value={formData[feature.name].toString()}
+                  onChange={handleRadioChange(feature.name)}
+                >
+                  {feature.options?.map((option) => (
+                    <FormControlLabel
+                      key={option.value}
+                      value={option.value.toString()}
+                      control={<Radio />}
+                      label={option.label}
+                    />
+                  ))}
+                </RadioGroup>
+              </FormControl>
+            )}
           </Box>
-        </Paper>
-      </Container>
-    </ThemeProvider>
+        ))}
+
+        {error && <Typography color="error">{error}</Typography>}
+
+        <Button type="submit" variant="contained" disabled={loading}>
+          {loading ? <CircularProgress size={24} /> : "Analyze My Stress Level"}
+        </Button>
+      </form>
+    </Container>
   );
 }
+
 
 
 
