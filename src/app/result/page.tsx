@@ -120,13 +120,13 @@ export default function Result() {
     },
   };
 
-  const predictionMap: Record<number, string> = {
-    0: "acute",
-    1: "episodic",
-    2: "chronic",
-  };
-
   useEffect(() => {
+    const predictionMap: Record<number, string> = {
+      0: "acute",
+      1: "episodic",
+      2: "chronic",
+    };
+
     try {
       setLoading(true);
 
@@ -146,7 +146,7 @@ export default function Result() {
       if (isNaN(prediction) || !(prediction in predictionMap)) {
         console.warn("Invalid prediction value:", stressLevel);
         setFetchError(`Invalid stress level: ${stressLevel}`);
-        setStressType("episodic"); // Fallback
+        setStressType("episodic");
         return;
       }
 
@@ -157,7 +157,6 @@ export default function Result() {
         try {
           const parsedProbability = JSON.parse(decodeURIComponent(probability));
           console.log("Parsed Probability:", parsedProbability);
-          // Optionally store or use probability if needed in UI
         } catch (err) {
           console.warn("Failed to parse probability:", err);
         }
@@ -167,7 +166,7 @@ export default function Result() {
       setFetchError(
         `Error: ${error instanceof Error ? error.message : "Unknown error"}`
       );
-      setStressType("episodic"); // Fallback
+      setStressType("episodic");
     } finally {
       setLoading(false);
     }
@@ -383,6 +382,7 @@ export default function Result() {
     </ThemeProvider>
   );
 }
+
 
 
 
